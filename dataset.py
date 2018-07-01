@@ -141,6 +141,34 @@ def _load_dataset(dataroot, name, img_id2val, label2ans):
     return entries
 
 
+def _load_foil_dataset(path, img_id2val):
+    """Load entries
+
+    img_id2val: dict {img_id -> val} val can be used to retrieve image or features
+    dataroot: root path of dataset
+    """
+    with open(path) as in_file:
+        foil = json.load(in_file)
+
+    img_id2img = {}
+    for image in foil["images"]:
+        img_id2img[image["id"]] = image["file_name"]
+
+    entries = []
+    for annotation in foil["annotations"]:
+        entries.append(_create_entry(
+            img_id2img[img_id2val[annotation["image_id"]]],
+            {
+                "question_id": annotation["id"],
+                "image_id": annotation["image_id"],
+                "question": annotation["caption"]
+            },
+            1 if annotation["targetWord"] == "Original" else 0
+        ))
+
+    return entries
+
+
 def _load_visualgenome(dataroot, name, img_id2val, label2ans, adaptive=True):
     """Load entries
 
@@ -300,6 +328,75 @@ class VQAFeatureDataset(Dataset):
             return features, spatials, question, target
         else:
             return features, spatials, question, question_id
+
+    def __len__(self):
+        return len(self.entries)
+
+
+class FoilFeatureDataset(Dataset):
+    def __init__(self, name, dictionary, dataroot='data', adaptive=False):
+        super(FoilFeatureDataset, self).__init__()
+
+        self.dictionary = dictionary
+        self.adaptive = adaptive
+
+        self.img_id2idx = cPickle.load(
+            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % (name, '' if self.adaptive else '36')), 'rb'))
+
+        h5_path = os.path.join(dataroot, '%s%s.hdf5' % (name, '' if self.adaptive else '36'))
+
+        print('loading features from h5 file')
+        with h5py.File(h5_path, 'r') as hf:
+            self.features = np.array(hf.get('image_features'))
+            self.spatials = np.array(hf.get('spatial_features'))
+            if self.adaptive:
+                self.pos_boxes = np.array(hf.get('pos_boxes'))
+
+        self.entries = _load_foil_dataset(name, self.img_id2idx)
+        self.tokenize()
+        self.tensorize()
+        self.v_dim = self.features.size(1 if self.adaptive else 2)
+        self.s_dim = self.spatials.size(1 if self.adaptive else 2)
+
+    def tokenize(self, max_length=14):
+        """Tokenizes the questions.
+
+        This will add q_token in each entry of the dataset.
+        -1 represent nil, and should be treated as padding_idx in embedding
+        """
+        for entry in self.entries:
+            tokens = self.dictionary.tokenize(entry['question'], False)
+            tokens = tokens[:max_length]
+            if len(tokens) < max_length:
+                # Note here we pad in front of the sentence
+                padding = [self.dictionary.padding_idx] * (max_length - len(tokens))
+                tokens = tokens + padding
+            utils.assert_eq(len(tokens), max_length)
+            entry['q_token'] = tokens
+
+    def tensorize(self):
+        self.features = torch.from_numpy(self.features)
+        self.spatials = torch.from_numpy(self.spatials)
+
+        for entry in self.entries:
+            question = torch.from_numpy(np.array(entry['q_token']))
+            entry['q_token'] = question
+
+            answer = torch.from_numpy(entry['answer'])
+            entry["answer"] = answer
+
+    def __getitem__(self, index):
+        entry = self.entries[index]
+        if not self.adaptive:
+            features = self.features[entry['image']]
+            spatials = self.spatials[entry['image']]
+        else:
+            features = self.features[self.pos_boxes[entry['image']][0]:self.pos_boxes[entry['image']][1], :]
+            spatials = self.spatials[self.pos_boxes[entry['image']][0]:self.pos_boxes[entry['image']][1], :]
+
+        question = entry['q_token']
+        answer = entry['answer']
+        return features, spatials, question, answer
 
     def __len__(self):
         return len(self.entries)
