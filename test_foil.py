@@ -98,20 +98,24 @@ if __name__ == '__main__':
     eval_loader = DataLoader(eval_dset, batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
 
     def process(args, model, eval_loader):
-        model_path = args.input+'/model%s.pth' % \
-            ('' if 0 > args.epoch else '_epoch%d' % args.epoch)
+        model_path = args.input+'/model%s.pth' % ('' if 0 > args.epoch else '_epoch%d' % args.epoch)
     
         print('loading %s' % model_path)
         model_data = torch.load(model_path)
+        print("step 1")
 
         model = nn.DataParallel(model).cuda()
         model.load_state_dict(model_data.get('model_state', model_data))
+        print("step 2")
 
         model.train(False)
+        print("step 3")
 
         logits, qIds = get_logits(model, eval_loader)
+        print("step 4")
         # results = make_json(logits, qIds, eval_loader)
         model_label = '%s%s%d_%s' % (args.model, args.op, args.num_hid, args.label)
+        print("step 5")
 
         if args.logits:
             utils.create_dir('logits/'+model_label)
@@ -125,4 +129,4 @@ if __name__ == '__main__':
         #     % (args.split, model_label), 'w') as f:
         #     json.dump(results, f)
 
-    process(args, model, eval_loader)
+    # process(args, model, eval_loader)

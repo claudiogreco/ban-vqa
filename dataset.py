@@ -382,8 +382,6 @@ class FoilFeatureDataset(Dataset):
             if self.adaptive:
                 self.test2015_img_pos_boxes = np.array(hf.get('pos_boxes'))
 
-        self.num_ans_candidates = 2
-
         self.entries = _load_foil_dataset(foil_path, self.img_id2train, self.img_id2val, self.img_id2test)
         self.tokenize()
         self.tensorize()
