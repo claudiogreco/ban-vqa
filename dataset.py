@@ -420,7 +420,7 @@ class FoilFeatureDataset(Dataset):
         if entry["image_id"] in self.img_id2train:
             img_features = self.train_img_features
         elif entry["image_id"] in self.img_id2val:
-            img_features = self.val_img_feature
+            img_features = self.val_img_features
         elif entry["image_id"] in self.img_id2test:
             img_features = self.test2015_img_features
 
