@@ -141,7 +141,7 @@ def _load_dataset(dataroot, name, img_id2val, label2ans):
     return entries
 
 
-def _load_foil_dataset(path, img_id2val):
+def _load_foil_dataset(path, img_id2train, img_id2val, img_id2test):
     """Load entries
 
     img_id2val: dict {img_id -> val} val can be used to retrieve image or features
@@ -156,8 +156,15 @@ def _load_foil_dataset(path, img_id2val):
 
     entries = []
     for annotation in foil["annotations"]:
+        img = None
+        if annotation["image_id"] in img_id2train:
+            img = img_id2train[annotation["image_id"]]
+        elif annotation["image_id"] in img_id2val:
+            img = img_id2val[annotation["image_id"]]
+        elif annotation["image_id"] in img_id2test:
+            img = img_id2test[annotation["image_id"]]
         entries.append(_create_entry(
-            img_id2val[annotation["image_id"]],
+            img,
             {
                 "question_id": annotation["id"],
                 "image_id": img_id2img[annotation["image_id"]],
@@ -340,8 +347,14 @@ class FoilFeatureDataset(Dataset):
         self.dictionary = dictionary
         self.adaptive = adaptive
 
-        self.img_id2idx = cPickle.load(
-            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % (vqa_name, '' if self.adaptive else '36')), 'rb'))
+        self.img_id2train = cPickle.load(
+            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % ("train", '' if self.adaptive else '36')), 'rb'))
+
+        self.img_id2val = cPickle.load(
+            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % ("val", '' if self.adaptive else '36')), 'rb'))
+
+        self.img_id2test = cPickle.load(
+            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % ("test2015", '' if self.adaptive else '36')), 'rb'))
 
         h5_path = os.path.join(dataroot, '%s%s.hdf5' % (vqa_name, '' if self.adaptive else '36'))
 
@@ -352,7 +365,7 @@ class FoilFeatureDataset(Dataset):
             if self.adaptive:
                 self.pos_boxes = np.array(hf.get('pos_boxes'))
 
-        self.entries = _load_foil_dataset(foil_path, self.img_id2idx)
+        self.entries = _load_foil_dataset(foil_path, self.img_id2train, self.img_id2val, self.img_id2test)
         self.tokenize()
         self.tensorize()
         self.v_dim = self.features.size(1 if self.adaptive else 2)
