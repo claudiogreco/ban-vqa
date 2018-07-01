@@ -395,9 +395,6 @@ class FoilFeatureDataset(Dataset):
             question = torch.from_numpy(np.array(entry['q_token']))
             entry['q_token'] = question
 
-            answer = torch.from_numpy(entry['answer'])
-            entry["answer"] = answer
-
     def __getitem__(self, index):
         entry = self.entries[index]
         if not self.adaptive:
