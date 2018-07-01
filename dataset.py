@@ -401,13 +401,13 @@ class FoilFeatureDataset(Dataset):
 
     def tensorize(self):
         self.train_img_features = torch.from_numpy(self.train_img_features)
-        self.train_img_features = torch.from_numpy(self.train_img_features)
+        self.train_img_spatials = torch.from_numpy(self.train_img_spatials)
 
         self.val_img_features = torch.from_numpy(self.val_img_features)
-        self.val_img_features = torch.from_numpy(self.val_img_features)
+        self.val_img_spatials = torch.from_numpy(self.val_img_spatials)
 
         self.test2015_img_features = torch.from_numpy(self.test2015_img_features)
-        self.test2015_img_features = torch.from_numpy(self.test2015_img_features)
+        self.test2015_img_spatials = torch.from_numpy(self.test2015_img_spatials)
 
         for entry in self.entries:
             question = torch.from_numpy(np.array(entry['q_token']))
