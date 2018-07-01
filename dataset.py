@@ -334,16 +334,16 @@ class VQAFeatureDataset(Dataset):
 
 
 class FoilFeatureDataset(Dataset):
-    def __init__(self, name, dictionary, dataroot='data', adaptive=False):
+    def __init__(self, vqa_name, foil_path, dictionary, dataroot='data', adaptive=False):
         super(FoilFeatureDataset, self).__init__()
 
         self.dictionary = dictionary
         self.adaptive = adaptive
 
         self.img_id2idx = cPickle.load(
-            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % (name, '' if self.adaptive else '36')), 'rb'))
+            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % (vqa_name, '' if self.adaptive else '36')), 'rb'))
 
-        h5_path = os.path.join(dataroot, '%s%s.hdf5' % (name, '' if self.adaptive else '36'))
+        h5_path = os.path.join(dataroot, '%s%s.hdf5' % (vqa_name, '' if self.adaptive else '36'))
 
         print('loading features from h5 file')
         with h5py.File(h5_path, 'r') as hf:
@@ -352,7 +352,7 @@ class FoilFeatureDataset(Dataset):
             if self.adaptive:
                 self.pos_boxes = np.array(hf.get('pos_boxes'))
 
-        self.entries = _load_foil_dataset(name, self.img_id2idx)
+        self.entries = _load_foil_dataset(foil_path, self.img_id2idx)
         self.tokenize()
         self.tensorize()
         self.v_dim = self.features.size(1 if self.adaptive else 2)
