@@ -417,22 +417,26 @@ class FoilFeatureDataset(Dataset):
         entry = self.entries[index]
 
         img_features = None
+        img_spatials = None
         if entry["image_id"] in self.img_id2train:
             img_features = self.train_img_features
+            img_spatials = self.train_img_spatials
             pos_boxes = self.train_img_pos_boxes
         elif entry["image_id"] in self.img_id2val:
             img_features = self.val_img_features
+            img_spatials = self.val_img_spatials
             pos_boxes = self.val_img_pos_boxes
         elif entry["image_id"] in self.img_id2test:
             img_features = self.test2015_img_features
+            img_spatials = self.test2015_img_spatials
             pos_boxes = self.test2015_img_pos_boxes
 
         if not self.adaptive:
             features = img_features[entry['image']]
-            spatials = img_features[entry['image']]
+            spatials = img_spatials[entry['image']]
         else:
             features = img_features[pos_boxes[entry['image']][0]:pos_boxes[entry['image']][1], :]
-            spatials = img_features[pos_boxes[entry['image']][0]:pos_boxes[entry['image']][1], :]
+            spatials = img_spatials[pos_boxes[entry['image']][0]:pos_boxes[entry['image']][1], :]
 
         question = entry['q_token']
         answer = entry['answer']
