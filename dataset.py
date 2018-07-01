@@ -341,7 +341,7 @@ class VQAFeatureDataset(Dataset):
 
 
 class FoilFeatureDataset(Dataset):
-    def __init__(self, vqa_name, foil_path, dictionary, dataroot='data', adaptive=False):
+    def __init__(self, foil_path, dictionary, dataroot='data', adaptive=False):
         super(FoilFeatureDataset, self).__init__()
 
         self.dictionary = dictionary
