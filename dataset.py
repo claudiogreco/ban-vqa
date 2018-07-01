@@ -157,7 +157,7 @@ def _load_foil_dataset(path, img_id2val):
     entries = []
     for annotation in foil["annotations"]:
         entries.append(_create_entry(
-            img_id2val[img_id2img[annotation["image_id"]]],
+            img_id2val[annotation["image_id"]],
             {
                 "question_id": annotation["id"],
                 "image_id": img_id2img[annotation["image_id"]],
