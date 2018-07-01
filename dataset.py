@@ -167,7 +167,7 @@ def _load_foil_dataset(path, img_id2train, img_id2val, img_id2test):
             img,
             {
                 "question_id": annotation["id"],
-                "image_id": img_id2img[annotation["image_id"]],
+                "image_id": annotation["image_id"],
                 "question": annotation["caption"]
             },
             1 if annotation["targetWord"] == "Original" else 0
@@ -261,7 +261,7 @@ class VQAFeatureDataset(Dataset):
 
         self.img_id2idx = cPickle.load(
             open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % (name, '' if self.adaptive else '36')), 'rb'))
-        
+
         h5_path = os.path.join(dataroot, '%s%s.hdf5' % (name, '' if self.adaptive else '36'))
 
         print('loading features from h5 file')    
@@ -356,20 +356,32 @@ class FoilFeatureDataset(Dataset):
         self.img_id2test = cPickle.load(
             open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % ("test2015", '' if self.adaptive else '36')), 'rb'))
 
-        h5_path = os.path.join(dataroot, '%s%s.hdf5' % (vqa_name, '' if self.adaptive else '36'))
-
-        print('loading features from h5 file')
-        with h5py.File(h5_path, 'r') as hf:
-            self.features = np.array(hf.get('image_features'))
-            self.spatials = np.array(hf.get('spatial_features'))
+        print('loading image features from h5 train file')
+        with h5py.File(os.path.join(dataroot, '%s%s.hdf5' % ("train", '' if self.adaptive else '36')), 'r') as hf:
+            self.train_img_features = np.array(hf.get('image_features'))
+            self.train_img_spatials = np.array(hf.get('spatial_features'))
             if self.adaptive:
-                self.pos_boxes = np.array(hf.get('pos_boxes'))
+                self.train_img_pos_boxes = np.array(hf.get('pos_boxes'))
+
+        print('loading image features from h5 val file')
+        with h5py.File(os.path.join(dataroot, '%s%s.hdf5' % ("val", '' if self.adaptive else '36')), 'r') as hf:
+            self.val_img_features = np.array(hf.get('image_features'))
+            self.val_img_spatials = np.array(hf.get('spatial_features'))
+            if self.adaptive:
+                self.val_img_pos_boxes = np.array(hf.get('pos_boxes'))
+
+        print('loading image features from h5 test2015 file')
+        with h5py.File(os.path.join(dataroot, '%s%s.hdf5' % ("test2015", '' if self.adaptive else '36')), 'r') as hf:
+            self.test2015_img_features = np.array(hf.get('image_features'))
+            self.test2015_img_spatials = np.array(hf.get('spatial_features'))
+            if self.adaptive:
+                self.test2015_img_pos_boxes = np.array(hf.get('pos_boxes'))
 
         self.entries = _load_foil_dataset(foil_path, self.img_id2train, self.img_id2val, self.img_id2test)
         self.tokenize()
         self.tensorize()
-        self.v_dim = self.features.size(1 if self.adaptive else 2)
-        self.s_dim = self.spatials.size(1 if self.adaptive else 2)
+        self.v_dim = self.train_img_features.size(1 if self.adaptive else 2)
+        self.s_dim = self.train_img_spatials.size(1 if self.adaptive else 2)
 
     def tokenize(self, max_length=14):
         """Tokenizes the questions.
@@ -388,8 +400,14 @@ class FoilFeatureDataset(Dataset):
             entry['q_token'] = tokens
 
     def tensorize(self):
-        self.features = torch.from_numpy(self.features)
-        self.spatials = torch.from_numpy(self.spatials)
+        self.train_img_features = torch.from_numpy(self.train_img_features)
+        self.train_img_features = torch.from_numpy(self.train_img_features)
+
+        self.val_img_features = torch.from_numpy(self.val_img_features)
+        self.val_img_features = torch.from_numpy(self.val_img_features)
+
+        self.test2015_img_features = torch.from_numpy(self.test2015_img_features)
+        self.test2015_img_features = torch.from_numpy(self.test2015_img_features)
 
         for entry in self.entries:
             question = torch.from_numpy(np.array(entry['q_token']))
@@ -397,12 +415,21 @@ class FoilFeatureDataset(Dataset):
 
     def __getitem__(self, index):
         entry = self.entries[index]
+
+        img_features = None
+        if entry["image_id"] in self.img_id2train:
+            img_features = self.train_img_features
+        elif entry["image_id"] in self.img_id2val:
+            img_features = self.val_img_feature
+        elif entry["image_id"] in self.img_id2test:
+            img_features = self.test2015_img_features
+
         if not self.adaptive:
-            features = self.features[entry['image']]
-            spatials = self.spatials[entry['image']]
+            features = img_features[entry['image']]
+            spatials = img_features[entry['image']]
         else:
-            features = self.features[self.pos_boxes[entry['image']][0]:self.pos_boxes[entry['image']][1], :]
-            spatials = self.spatials[self.pos_boxes[entry['image']][0]:self.pos_boxes[entry['image']][1], :]
+            features = img_features[self.pos_boxes[entry['image']][0]:self.pos_boxes[entry['image']][1], :]
+            spatials = img_features[self.pos_boxes[entry['image']][0]:self.pos_boxes[entry['image']][1], :]
 
         question = entry['q_token']
         answer = entry['answer']
