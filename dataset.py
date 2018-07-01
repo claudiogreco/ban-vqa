@@ -94,7 +94,7 @@ class Dictionary(object):
 
 
 def _create_entry(img, question, answer):
-    if None!=answer:
+    if None!=answer and isinstance(answer, dict):
         answer.pop('image_id')
         answer.pop('question_id')
     entry = {
