@@ -109,6 +109,7 @@ if __name__ == '__main__':
         model.train(False)
 
         model.module.classifier = SimpleClassifier(args.num_hid, args.num_hid * 2, eval_dset.num_ans_candidates, .5)
+        model.module.classifier = model.module.classifier.cuda()
 
         logits, qIds = get_logits(model, eval_loader)
 
