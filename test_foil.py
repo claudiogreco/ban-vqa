@@ -51,6 +51,7 @@ def get_answer(p, dataloader):
 def get_logits(model, dataloader):
     N = len(dataloader.dataset)
     M = dataloader.dataset.num_ans_candidates
+    print("M = {}".format(M))
     pred = torch.FloatTensor(N, M).zero_()
     qIds = torch.IntTensor(N).zero_()
     idx = 0

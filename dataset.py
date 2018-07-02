@@ -416,7 +416,9 @@ class FoilFeatureDataset(Dataset):
 
         for entry in self.entries:
             question = torch.from_numpy(np.array(entry['q_token']))
+            answer = torch.from_numpy(np.array([entry['answer']]))
             entry['q_token'] = question
+            entry['answer'] = answer
 
     def __getitem__(self, index):
         entry = self.entries[index]
@@ -445,7 +447,9 @@ class FoilFeatureDataset(Dataset):
 
         question = entry['q_token']
         answer = entry['answer']
-        return features, spatials, question, answer
+        target = torch.zeros(self.num_ans_candidates)
+        target.scatter_(0, answer, 1.0)
+        return features, spatials, question, target
 
     def __len__(self):
         return len(self.entries)
