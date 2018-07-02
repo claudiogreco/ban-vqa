@@ -47,15 +47,15 @@ class BanModel(nn.Module):
         """
         w_emb = self.w_emb(q)
         q_emb = self.q_emb.forward_all(w_emb) # [batch, q_len, q_dim]
-        boxes = b[:,:,:4].transpose(1,2)
+        boxes = b[:, :, :4].transpose(1, 2)
 
         b_emb = [0] * self.glimpse
         att, logits = self.v_att.forward_all(v, q_emb) # b x g x v x q
 
         for g in range(self.glimpse):
-            b_emb[g] = self.b_net[g].forward_with_weights(v, q_emb, att[:,g,:,:]) # b x l x h
+            b_emb[g] = self.b_net[g].forward_with_weights(v, q_emb, att[:, g, :, :]) # b x l x h
             
-            atten, _ = logits[:,g,:,:].max(2)
+            atten, _ = logits[:, g, :, :].max(2)
             embed = self.counter(boxes, atten)
 
             q_emb = self.q_prj[g](b_emb[g].unsqueeze(1)) + q_emb

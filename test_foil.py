@@ -51,9 +51,8 @@ def get_answer(p, dataloader):
 def get_logits(model, dataloader):
     N = len(dataloader.dataset)
     M = dataloader.dataset.num_ans_candidates
-    print("M = {}".format(M))
     pred = torch.FloatTensor(N, M).zero_()
-    qIds = torch.IntTensor(N).zero_()
+    # qIds = torch.IntTensor(N).zero_()
     idx = 0
     bar = progressbar.ProgressBar(max_value=N)
     for v, b, q, i in iter(dataloader):
@@ -64,15 +63,14 @@ def get_logits(model, dataloader):
         q = Variable(q, volatile=True).cuda()
         logits, att = model(v, b, q, None)
         pred[idx:idx + batch_size, :].copy_(logits.data)
-        qIds[idx:idx + batch_size].copy_(i)
+        # qIds[idx:idx + batch_size].copy_(i)
         idx += batch_size
         if args.debug:
             print(get_question(q.data[0], dataloader))
             print(get_answer(logits.data[0], dataloader))
         print(pred)
     bar.update(idx)
-    return pred, qIds
-
+    return pred#, qIds
 
 def make_json(logits, qIds, dataloader):
     utils.assert_eq(logits.size(0), len(qIds))
