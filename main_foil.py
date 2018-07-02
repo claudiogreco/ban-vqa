@@ -151,7 +151,7 @@ if __name__ == '__main__':
         model.module.classifier = SimpleClassifier(args.num_hid, args.num_hid * 2, train_dset.num_ans_candidates, .5)
         model.module.classifier = model.module.classifier.cuda()
 
-        optim = torch.optim.Adamax(filter(lambda p: p.requires_grad, model.parameters()))
+        # optim = torch.optim.Adamax(filter(lambda p: p.requires_grad, model.parameters()))
         # optim.load_state_dict(model_data.get('optimizer_state', model_data))
         # epoch = model_data['epoch'] + 1
 
