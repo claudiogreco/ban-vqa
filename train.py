@@ -191,7 +191,7 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output, opt=None, s
         train_score = 100 * train_score / N
         if None != eval_loader:
             model.train(False)
-            eval_score, bound, entropy = evaluate(model, eval_loader)
+            eval_score, bound, entropy = evaluate_foil(model, eval_loader)
             model.train(True)
 
         logger.write('epoch %d, time: %.2f' % (epoch, time.time() - t))
@@ -226,6 +226,34 @@ def evaluate(model, dataloader):
         q = Variable(q, volatile=True).cuda()
         pred, att = model(v, b, q, None)
         batch_score = compute_score_with_logits(pred, a.cuda()).sum()
+        score += batch_score
+        upper_bound += (a.max(1)[0]).sum()
+        num_data += pred.size(0)
+        if att is not None and 0 < model.module.glimpse:
+            entropy += calc_entropy(att.data)[:model.module.glimpse]
+
+    score = score / len(dataloader.dataset)
+    upper_bound = upper_bound / len(dataloader.dataset)
+
+    if entropy is not None:
+        entropy = entropy / len(dataloader.dataset)
+
+    return score, upper_bound, entropy
+
+
+def evaluate_foil(model, dataloader):
+    score = 0
+    upper_bound = 0
+    num_data = 0
+    entropy = None
+    if hasattr(model.module, 'glimpse'):
+        entropy = torch.Tensor(model.module.glimpse).zero_().cuda()
+    for v, b, q, a in iter(dataloader):
+        v = Variable(v).cuda()
+        b = Variable(b).cuda()
+        q = Variable(q, volatile=True).cuda()
+        pred, att = model(v, b, q, None)
+        batch_score = compute_accuracy_with_logits(pred, a.cuda())
         score += batch_score
         upper_bound += (a.max(1)[0]).sum()
         num_data += pred.size(0)
