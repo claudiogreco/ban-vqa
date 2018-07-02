@@ -3,17 +3,17 @@ This code is modified from Hengyuan Hu's repository.
 https://github.com/hengyuan-hu/bottom-up-attention-vqa
 """
 import argparse
-import json
+
 import progressbar
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 from torch.autograd import Variable
-import numpy as np
+from torch.utils.data import DataLoader
 
-from dataset import Dictionary, VQAFeatureDataset, FoilFeatureDataset
 import base_model
 import utils
+from classifier import SimpleClassifier
+from dataset import Dictionary, FoilFeatureDataset
 
 
 def parse_args():
@@ -62,12 +62,13 @@ def get_logits(model, dataloader):
         b = Variable(b, volatile=True).cuda()
         q = Variable(q, volatile=True).cuda()
         logits, att = model(v, b, q, None)
-        pred[idx:idx+batch_size,:].copy_(logits.data)
-        qIds[idx:idx+batch_size].copy_(i)
+        pred[idx:idx + batch_size, :].copy_(logits.data)
+        qIds[idx:idx + batch_size].copy_(i)
         idx += batch_size
         if args.debug:
             print(get_question(q.data[0], dataloader))
             print(get_answer(logits.data[0], dataloader))
+        print(pred)
     bar.update(idx)
     return pred, qIds
 
@@ -81,6 +82,7 @@ def make_json(logits, qIds, dataloader):
         result['answer'] = get_answer(logits[i], dataloader)
         results.append(result)
     return results
+
 
 if __name__ == '__main__':
     args = parse_args()
@@ -98,35 +100,32 @@ if __name__ == '__main__':
     eval_loader = DataLoader(eval_dset, batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
 
     def process(args, model, eval_loader):
-        model_path = args.input+'/model%s.pth' % ('' if 0 > args.epoch else '_epoch%d' % args.epoch)
-    
+        model_path = args.input + '/model%s.pth' % ('' if 0 > args.epoch else '_epoch%d' % args.epoch)
+
         print('loading %s' % model_path)
         model_data = torch.load(model_path)
-        print("step 1")
-
         model = nn.DataParallel(model).cuda()
         model.load_state_dict(model_data.get('model_state', model_data))
-        print("step 2")
-
         model.train(False)
-        print("step 3")
+
+        model.module.classifier = SimpleClassifier(args.num_hid, args.num_hid * 2, eval_dset.num_ans_candidates, .5)
 
         logits, qIds = get_logits(model, eval_loader)
-        print("step 4")
+
         # results = make_json(logits, qIds, eval_loader)
         model_label = '%s%s%d_%s' % (args.model, args.op, args.num_hid, args.label)
         print("step 5")
 
         if args.logits:
-            utils.create_dir('logits/'+model_label)
-            torch.save(logits, 'logits/'+model_label+'/logits%d.pth' % args.index)
+            utils.create_dir('logits/' + model_label)
+            torch.save(logits, 'logits/' + model_label + '/logits%d.pth' % args.index)
 
-        # utils.create_dir(args.output)
-        # if 0 <= args.epoch:
-        #     model_label += '_epoch%d' % args.epoch
+            # utils.create_dir(args.output)
+            # if 0 <= args.epoch:
+            #     model_label += '_epoch%d' % args.epoch
 
-        # with open(args.output+'/%s_%s.json' \
-        #     % (args.split, model_label), 'w') as f:
-        #     json.dump(results, f)
+            # with open(args.output+'/%s_%s.json' \
+            #     % (args.split, model_label), 'w') as f:
+            #     json.dump(results, f)
 
-    process(args, model, eval_loader)
+    # process(args, model, eval_loader)

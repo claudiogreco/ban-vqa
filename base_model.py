@@ -78,7 +78,6 @@ def build_ban(dataset, num_hid, op='', gamma=4):
         b_net.append(BCNet(dataset.v_dim, num_hid, num_hid, None, k=1))
         q_prj.append(FCNet([num_hid, num_hid], '', .2))
         c_prj.append(FCNet([objects + 1, num_hid], 'ReLU', .0))
-    classifier = SimpleClassifier(
-        num_hid, num_hid * 2, dataset.num_ans_candidates, .5)
+    classifier = SimpleClassifier(num_hid, num_hid * 2, dataset.num_ans_candidates, .5)
     counter = Counter(objects)
     return BanModel(dataset, w_emb, q_emb, v_att, b_net, q_prj, c_prj, classifier, counter, op, gamma)
