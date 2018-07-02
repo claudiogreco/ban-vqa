@@ -2,20 +2,22 @@
 This code is modified from Hengyuan Hu's repository.
 https://github.com/hengyuan-hu/bottom-up-attention-vqa
 """
-import os
+import _pickle as cPickle
 import argparse
+import os
+
+import h5py
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, ConcatDataset
-import numpy as np
 
-from classifier import SimpleClassifier
-from dataset import Dictionary, VQAFeatureDataset, VisualGenomeFeatureDataset, FoilFeatureDataset
 import base_model
-from train import train
 import utils
-from utils import trim_collate
+from classifier import SimpleClassifier
+from dataset import Dictionary, VisualGenomeFeatureDataset, FoilFeatureDataset
 from dataset import tfidf_from_questions
+from train import train
 
 
 def parse_args():
@@ -48,8 +50,77 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = True
 
     dictionary = Dictionary.load_from_file('data/dictionary.pkl')
-    train_dset = FoilFeatureDataset('data/foilGWVQA.train.json', dictionary, adaptive=True)
-    val_dset = FoilFeatureDataset('data/foilGWVQA.val.json', dictionary, adaptive=True)
+
+    adaptive = True
+
+    img_id2train = cPickle.load(
+        open(os.path.join('data', '%s%s_imgid2idx.pkl' % ("train", '' if adaptive else '36')), 'rb'))
+
+    img_id2val = cPickle.load(
+        open(os.path.join('data', '%s%s_imgid2idx.pkl' % ("val", '' if adaptive else '36')), 'rb'))
+
+    img_id2test = cPickle.load(
+        open(os.path.join('data', '%s%s_imgid2idx.pkl' % ("test2015", '' if adaptive else '36')), 'rb'))
+
+    train_img_pos_boxes = None
+    val_img_pos_boxes = None
+    test2015_img_pos_boxes = None
+
+    print('loading image features from h5 train file')
+    with h5py.File(os.path.join('data', '%s%s.hdf5' % ("train", '' if adaptive else '36')), 'r') as hf:
+        train_img_features = np.array(hf.get('image_features'))
+        train_img_spatials = np.array(hf.get('spatial_features'))
+        if adaptive:
+            train_img_pos_boxes = np.array(hf.get('pos_boxes'))
+
+    print('loading image features from h5 val file')
+    with h5py.File(os.path.join('data', '%s%s.hdf5' % ("val", '' if adaptive else '36')), 'r') as hf:
+        val_img_features = np.array(hf.get('image_features'))
+        val_img_spatials = np.array(hf.get('spatial_features'))
+        if adaptive:
+            val_img_pos_boxes = np.array(hf.get('pos_boxes'))
+
+    print('loading image features from h5 test2015 file')
+    with h5py.File(os.path.join('data', '%s%s.hdf5' % ("test2015", '' if adaptive else '36')), 'r') as hf:
+        test2015_img_features = np.array(hf.get('image_features'))
+        test2015_img_spatials = np.array(hf.get('spatial_features'))
+        if adaptive:
+            test2015_img_pos_boxes = np.array(hf.get('pos_boxes'))
+
+    train_dset = FoilFeatureDataset(
+        'data/foilGWVQA.train.json',
+        dictionary, img_id2train,
+        img_id2val,
+        img_id2test,
+        train_img_features,
+        train_img_spatials,
+        train_img_pos_boxes,
+        val_img_features,
+        val_img_spatials,
+        val_img_pos_boxes,
+        test2015_img_features,
+        test2015_img_spatials,
+        test2015_img_pos_boxes,
+        adaptive=True
+    )
+
+    val_dset = FoilFeatureDataset(
+        'data/foilGWVQA.val.json',
+        dictionary,
+        img_id2train,
+        img_id2val,
+        img_id2test,
+        train_img_features,
+        train_img_spatials,
+        train_img_pos_boxes,
+        val_img_features,
+        val_img_spatials,
+        val_img_pos_boxes,
+        test2015_img_features,
+        test2015_img_spatials,
+        test2015_img_pos_boxes,
+        adaptive=True
+    )
 
     constructor = 'build_%s' % args.model
     model = getattr(base_model, constructor)(train_dset, args.num_hid, 3129, args.op, args.gamma).cuda()
@@ -83,14 +154,16 @@ if __name__ == '__main__':
         model.module.classifier = SimpleClassifier(args.num_hid, args.num_hid * 2, train_dset.num_ans_candidates, .5)
         model.module.classifier = model.module.classifier.cuda()
 
-    if args.use_both: # use train & val splits to optimize
-        if args.use_vg: # use a portion of Visual Genome dataset
+    if args.use_both:  # use train & val splits to optimize
+        if args.use_vg:  # use a portion of Visual Genome dataset
             vg_dsets = [
                 VisualGenomeFeatureDataset('train', \
-                    train_dset.features, train_dset.spatials, dictionary, adaptive=True, pos_boxes=train_dset.pos_boxes),
+                                           train_dset.features, train_dset.spatials, dictionary, adaptive=True,
+                                           pos_boxes=train_dset.pos_boxes),
                 VisualGenomeFeatureDataset('val', \
-                    val_dset.features, val_dset.spatials, dictionary, adaptive=True, pos_boxes=val_dset.pos_boxes)]
-            trainval_dset = ConcatDataset([train_dset, val_dset]+vg_dsets)
+                                           val_dset.features, val_dset.spatials, dictionary, adaptive=True,
+                                           pos_boxes=val_dset.pos_boxes)]
+            trainval_dset = ConcatDataset([train_dset, val_dset] + vg_dsets)
         else:
             trainval_dset = ConcatDataset([train_dset, val_dset])
         train_loader = DataLoader(trainval_dset, batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)

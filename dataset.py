@@ -341,46 +341,52 @@ class VQAFeatureDataset(Dataset):
 
 
 class FoilFeatureDataset(Dataset):
-    def __init__(self, foil_path, dictionary, dataroot='data', adaptive=False):
+    def __init__(
+            self,
+            foil_path,
+            dictionary,
+            img_id2train,
+            img_id2val,
+            img_id2test,
+            train_img_features,
+            train_img_spatials,
+            train_img_pos_boxes,
+            val_img_features,
+            val_img_spatials,
+            val_img_pos_boxes,
+            test2015_img_features,
+            test2015_img_spatials,
+            test2015_img_pos_boxes,
+            adaptive=False):
         super(FoilFeatureDataset, self).__init__()
 
         # ans2label_path = os.path.join(dataroot, 'cache', 'trainval_ans2label.pkl')
         # label2ans_path = os.path.join(dataroot, 'cache', 'trainval_label2ans.pkl')
         # self.ans2label = cPickle.load(open(ans2label_path, 'rb'))
         # self.label2ans = cPickle.load(open(label2ans_path, 'rb'))
+
         self.num_ans_candidates = 2
         self.dictionary = dictionary
         self.adaptive = adaptive
 
-        self.img_id2train = cPickle.load(
-            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % ("train", '' if self.adaptive else '36')), 'rb'))
+        self.img_id2train = img_id2train
+        self.img_id2val = img_id2val
+        self.img_id2test = img_id2test
 
-        self.img_id2val = cPickle.load(
-            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % ("val", '' if self.adaptive else '36')), 'rb'))
-
-        self.img_id2test = cPickle.load(
-            open(os.path.join(dataroot, '%s%s_imgid2idx.pkl' % ("test2015", '' if self.adaptive else '36')), 'rb'))
-
-        print('loading image features from h5 train file')
-        with h5py.File(os.path.join(dataroot, '%s%s.hdf5' % ("train", '' if self.adaptive else '36')), 'r') as hf:
-            self.train_img_features = np.array(hf.get('image_features'))
-            self.train_img_spatials = np.array(hf.get('spatial_features'))
-            if self.adaptive:
-                self.train_img_pos_boxes = np.array(hf.get('pos_boxes'))
-
-        print('loading image features from h5 val file')
-        with h5py.File(os.path.join(dataroot, '%s%s.hdf5' % ("val", '' if self.adaptive else '36')), 'r') as hf:
-            self.val_img_features = np.array(hf.get('image_features'))
-            self.val_img_spatials = np.array(hf.get('spatial_features'))
-            if self.adaptive:
-                self.val_img_pos_boxes = np.array(hf.get('pos_boxes'))
-
-        print('loading image features from h5 test2015 file')
-        with h5py.File(os.path.join(dataroot, '%s%s.hdf5' % ("test2015", '' if self.adaptive else '36')), 'r') as hf:
-            self.test2015_img_features = np.array(hf.get('image_features'))
-            self.test2015_img_spatials = np.array(hf.get('spatial_features'))
-            if self.adaptive:
-                self.test2015_img_pos_boxes = np.array(hf.get('pos_boxes'))
+        self.train_img_features = train_img_features
+        self.train_img_spatials = train_img_spatials
+        if self.adaptive:
+            self.train_img_pos_boxes = train_img_pos_boxes
+            
+        self.val_img_features = val_img_features
+        self.val_img_spatials = val_img_spatials
+        if self.adaptive:
+            self.val_img_pos_boxes = val_img_pos_boxes
+            
+        self.test2015_img_features = test2015_img_features
+        self.test2015_img_spatials = test2015_img_spatials
+        if self.adaptive:
+            self.test2015_img_pos_boxes = test2015_img_pos_boxes
 
         self.entries = _load_foil_dataset(foil_path, self.img_id2train, self.img_id2val, self.img_id2test)
         self.tokenize()

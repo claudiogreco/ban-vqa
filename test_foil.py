@@ -2,8 +2,12 @@
 This code is modified from Hengyuan Hu's repository.
 https://github.com/hengyuan-hu/bottom-up-attention-vqa
 """
+import _pickle as cPickle
 import argparse
+import os
 
+import h5py
+import numpy as np
 import progressbar
 import torch
 import torch.nn as nn
@@ -70,7 +74,8 @@ def get_logits(model, dataloader):
             print(get_answer(logits.data[0], dataloader))
         print(logits.data)
     bar.update(idx)
-    return pred#, qIds
+    return pred  # , qIds
+
 
 def make_json(logits, qIds, dataloader):
     utils.assert_eq(logits.size(0), len(qIds))
@@ -89,7 +94,59 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = True
 
     dictionary = Dictionary.load_from_file('data/dictionary.pkl')
-    eval_dset = FoilFeatureDataset('data/foilGWVQA.test.json', dictionary, adaptive=True)
+
+    adaptive = True
+
+    img_id2train = cPickle.load(
+        open(os.path.join('data', '%s%s_imgid2idx.pkl' % ("train", '' if adaptive else '36')), 'rb'))
+
+    img_id2val = cPickle.load(
+        open(os.path.join('data', '%s%s_imgid2idx.pkl' % ("val", '' if adaptive else '36')), 'rb'))
+
+    img_id2test = cPickle.load(
+        open(os.path.join('data', '%s%s_imgid2idx.pkl' % ("test2015", '' if adaptive else '36')), 'rb'))
+
+    train_img_pos_boxes = None
+    val_img_pos_boxes = None
+    test2015_img_pos_boxes = None
+
+    print('loading image features from h5 train file')
+    with h5py.File(os.path.join('data', '%s%s.hdf5' % ("train", '' if adaptive else '36')), 'r') as hf:
+        train_img_features = np.array(hf.get('image_features'))
+        train_img_spatials = np.array(hf.get('spatial_features'))
+        if adaptive:
+            train_img_pos_boxes = np.array(hf.get('pos_boxes'))
+
+    print('loading image features from h5 val file')
+    with h5py.File(os.path.join('data', '%s%s.hdf5' % ("val", '' if adaptive else '36')), 'r') as hf:
+        val_img_features = np.array(hf.get('image_features'))
+        val_img_spatials = np.array(hf.get('spatial_features'))
+        if adaptive:
+            val_img_pos_boxes = np.array(hf.get('pos_boxes'))
+
+    print('loading image features from h5 test2015 file')
+    with h5py.File(os.path.join('data', '%s%s.hdf5' % ("test2015", '' if adaptive else '36')), 'r') as hf:
+        test2015_img_features = np.array(hf.get('image_features'))
+        test2015_img_spatials = np.array(hf.get('spatial_features'))
+        if adaptive:
+            test2015_img_pos_boxes = np.array(hf.get('pos_boxes'))
+
+    eval_dset = FoilFeatureDataset(
+        'data/foilGWVQA.test.json',
+        dictionary, img_id2train,
+        img_id2val,
+        img_id2test,
+        train_img_features,
+        train_img_spatials,
+        train_img_pos_boxes,
+        val_img_features,
+        val_img_spatials,
+        val_img_pos_boxes,
+        test2015_img_features,
+        test2015_img_spatials,
+        test2015_img_pos_boxes,
+        adaptive=True
+    )
 
     n_device = torch.cuda.device_count()
     batch_size = args.batch_size * n_device
@@ -97,6 +154,7 @@ if __name__ == '__main__':
     constructor = 'build_%s' % args.model
     model = getattr(base_model, constructor)(eval_dset, args.num_hid, 3129, args.op, args.gamma).cuda()
     eval_loader = DataLoader(eval_dset, batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
+
 
     def process(args, model, eval_loader):
         model_path = args.input + '/model%s.pth' % ('' if 0 > args.epoch else '_epoch%d' % args.epoch)
@@ -130,4 +188,4 @@ if __name__ == '__main__':
             #     % (args.split, model_label), 'w') as f:
             #     json.dump(results, f)
 
-    # process(args, model, eval_loader)
+            # process(args, model, eval_loader)
