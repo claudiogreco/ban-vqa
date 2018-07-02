@@ -15,7 +15,6 @@ import utils
 
 def instance_bce_with_logits(logits, labels):
     assert logits.dim() == 2
-
     loss = nn.functional.binary_cross_entropy_with_logits(logits, labels)
     loss *= labels.size(1)
     return loss
@@ -119,7 +118,10 @@ def train(model, train_loader, eval_loader, num_epochs, output, opt=None, s_epoc
 
 
 def compute_accuracy_with_logits(logits, labels):
+    logits = logits.long()
+    labels = labels.long()
     logits = torch.max(logits, 1)[1].data  # argmax
+    labels = torch.max(labels, 1)[1]
     return labels.eq(logits).sum()
 
 
@@ -131,17 +133,14 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output, opt=None, s
     gradual_warmup_steps = [0.5 * lr_default, 1.0 * lr_default, 1.5 * lr_default, 2.0 * lr_default]
     saving_epoch = 3
     grad_clip = .25
-
     utils.create_dir(output)
     optim = torch.optim.Adamax(filter(lambda p: p.requires_grad, model.parameters()),
                                lr=lr_default) if opt is None else opt
     logger = utils.Logger(os.path.join(output, 'log.txt'))
     best_eval_score = 0
-
     utils.print_model(model, logger)
     logger.write('optim: adamax lr=%.4f, decay_step=%d, decay_rate=%.2f, grad_clip=%.2f' % (
     lr_default, lr_decay_step, lr_decay_rate, grad_clip))
-
     for epoch in range(s_epoch, num_epochs):
         print("Epoch {}".format(epoch))
         total_loss = 0
@@ -160,18 +159,14 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output, opt=None, s
             logger.write('decreased lr: %.4f' % optim.param_groups[0]['lr'])
         else:
             logger.write('lr: %.4f' % optim.param_groups[0]['lr'])
-
         for i, (v, b, q, a) in enumerate(train_loader):
             bar.update(idx)
             batch_size = v.size(0)
-
             v = Variable(v).cuda()
             b = Variable(b).cuda()
             q = Variable(q).cuda()
             a = Variable(a).cuda()
-
             idx += batch_size
-
             pred, att = model(v, b, q, a)
             loss = instance_bce_with_logits(pred, a)
             print("Loss = {}".format(loss))
@@ -180,31 +175,25 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output, opt=None, s
             count_norm += 1
             optim.step()
             optim.zero_grad()
-
             batch_score = compute_accuracy_with_logits(pred, a.data)
             total_loss += loss.data[0] * v.size(0)
             train_score += batch_score
-
         bar.update(idx)
-
         total_loss /= N
         train_score = 100 * train_score / N
         if None != eval_loader:
             model.train(False)
             eval_score, bound, entropy = evaluate_foil(model, eval_loader)
             model.train(True)
-
         logger.write('epoch %d, time: %.2f' % (epoch, time.time() - t))
         logger.write('\ttrain_loss: %.2f, norm: %.4f, score: %.2f' % (total_loss, total_norm / count_norm, train_score))
         if eval_loader is not None:
             logger.write('\teval score: %.2f (%.2f)' % (100 * eval_score, 100 * bound))
-
         if eval_loader is not None and entropy is not None:
             info = ''
             for i in range(entropy.size(0)):
                 info = info + ' %.2f' % entropy[i]
             logger.write('\tentropy: ' + info)
-
         if (eval_loader is not None and eval_score > best_eval_score) or (
                 eval_loader is None and epoch >= saving_epoch):
             model_path = os.path.join(output, 'model_epoch%d.pth' % epoch)
