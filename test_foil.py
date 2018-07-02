@@ -68,7 +68,7 @@ def get_logits(model, dataloader):
         if args.debug:
             print(get_question(q.data[0], dataloader))
             print(get_answer(logits.data[0], dataloader))
-        print(pred)
+        print(logits.data)
     bar.update(idx)
     return pred#, qIds
 
@@ -112,6 +112,7 @@ if __name__ == '__main__':
 
         # logits, qIds = get_logits(model, eval_loader)
         logits = get_logits(model, eval_loader)
+        print(logits)
 
         # results = make_json(logits, qIds, eval_loader)
         model_label = '%s%s%d_%s' % (args.model, args.op, args.num_hid, args.label)
