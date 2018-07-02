@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('--label', type=str, default='')
     parser.add_argument('--gamma', type=int, default=8)
     parser.add_argument('--split', type=str, default='test2015')
-    parser.add_argument('--input', type=str, default='saved_models/ban/model_epoch12.pth')
+    parser.add_argument('--input', type=str, default='saved_models/ban')
     parser.add_argument('--output', type=str, default='results')
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--debug', type=bool, default=False)
