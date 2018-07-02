@@ -128,10 +128,10 @@ if __name__ == '__main__':
     tfidf = None
     weights = None
 
-    if args.tfidf:
-        dict = Dictionary.load_from_file('data/dictionary.pkl')
-        tfidf, weights = tfidf_from_questions(['train', 'val', 'test2015'], dict)
-    model.w_emb.init_embedding('data/glove6b_init_300d.npy', tfidf, weights)
+    # if args.tfidf:
+    #     dict = Dictionary.load_from_file('data/dictionary.pkl')
+    #     tfidf, weights = tfidf_from_questions(['train', 'val', 'test2015'], dict)
+    # model.w_emb.init_embedding('data/glove6b_init_300d.npy', tfidf, weights)
 
     model = nn.DataParallel(model).cuda()
 
@@ -144,15 +144,16 @@ if __name__ == '__main__':
         print('loading %s' % args.input)
         model_data = torch.load(args.input)
         model.load_state_dict(model_data.get('model_state', model_data))
-        optim = torch.optim.Adamax(filter(lambda p: p.requires_grad, model.parameters()))
-        optim.load_state_dict(model_data.get('optimizer_state', model_data))
-        epoch = model_data['epoch'] + 1
 
         # Fine-tuning
         for param in model.parameters():
             param.requires_grad = False
         model.module.classifier = SimpleClassifier(args.num_hid, args.num_hid * 2, train_dset.num_ans_candidates, .5)
         model.module.classifier = model.module.classifier.cuda()
+
+        optim = torch.optim.Adamax(filter(lambda p: p.requires_grad, model.parameters()))
+        # optim.load_state_dict(model_data.get('optimizer_state', model_data))
+        # epoch = model_data['epoch'] + 1
 
     if args.use_both:  # use train & val splits to optimize
         if args.use_vg:  # use a portion of Visual Genome dataset
