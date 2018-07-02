@@ -17,7 +17,7 @@ import utils
 from classifier import SimpleClassifier
 from dataset import Dictionary, VisualGenomeFeatureDataset, FoilFeatureDataset
 from dataset import tfidf_from_questions
-from train import train
+from train import train, train_foil
 
 
 def parse_args():
@@ -173,4 +173,4 @@ if __name__ == '__main__':
         train_loader = DataLoader(train_dset, batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
         eval_loader = DataLoader(val_dset, batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
 
-    train(model, train_loader, eval_loader, args.epochs, args.output, optim, epoch)
+    train_foil(model, train_loader, eval_loader, args.epochs, args.output, optim, epoch)
