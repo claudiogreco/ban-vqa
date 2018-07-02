@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('--use_vg', type=bool, default=False, help='use visual genome dataset to train?')
     parser.add_argument('--tfidf', type=bool, default=True, help='tfidf word embedding?')
     parser.add_argument('--input', type=str, default='saved_models/ban/model_epoch12.pth')
-    parser.add_argument('--output', type=str, default='saved_models/ban')
+    parser.add_argument('--output', type=str, default='foil_saved_models/ban')
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--seed', type=int, default=1204, help='random seed')
     args = parser.parse_args()
