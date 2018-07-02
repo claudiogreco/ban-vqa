@@ -40,7 +40,7 @@ if __name__ == '__main__':
     batch_size = args.batch_size * n_device
 
     constructor = 'build_%s' % args.model
-    model = getattr(base_model, constructor)(eval_dset, args.num_hid, args.op, args.gamma).cuda()
+    model = getattr(base_model, constructor)(eval_dset, args.num_hid, eval_dset.num_ans_candidates, args.op, args.gamma).cuda()
     model_data = torch.load(args.input+'/model'+('_epoch%d' % args.epoch if 0 < args.epoch else '')+'.pth')
 
     model = nn.DataParallel(model).cuda()

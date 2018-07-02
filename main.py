@@ -53,7 +53,7 @@ if __name__ == '__main__':
     batch_size = args.batch_size
 
     constructor = 'build_%s' % args.model
-    model = getattr(base_model, constructor)(train_dset, args.num_hid, args.op, args.gamma).cuda()
+    model = getattr(base_model, constructor)(train_dset, args.num_hid, train_dset.num_ans_candidates, args.op, args.gamma).cuda()
 
     tfidf = None
     weights = None
