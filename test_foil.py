@@ -110,7 +110,8 @@ if __name__ == '__main__':
         model.module.classifier = SimpleClassifier(args.num_hid, args.num_hid * 2, eval_dset.num_ans_candidates, .5)
         model.module.classifier = model.module.classifier.cuda()
 
-        logits, qIds = get_logits(model, eval_loader)
+        # logits, qIds = get_logits(model, eval_loader)
+        logits = get_logits(model, eval_loader)
 
         # results = make_json(logits, qIds, eval_loader)
         model_label = '%s%s%d_%s' % (args.model, args.op, args.num_hid, args.label)
