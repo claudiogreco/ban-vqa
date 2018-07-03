@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument('--output', type=str, default='foil_saved_models/ban')
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=512)
-    parser.add_argument('--train_last_only', type='train_last_only', action='store_false')
+    parser.add_argument('--train_last_only', dest='train_last_only', action='store_false')
     parser.add_argument('--seed', type=int, default=1204, help='random seed')
     args = parser.parse_args()
     return args
