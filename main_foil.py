@@ -140,4 +140,4 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_dset, args.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
     eval_loader = DataLoader(val_dset, args.batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
 
-    train_foil(model, train_loader, eval_loader, args.epochs, args.output, lr)
+    train_foil(model, train_loader, eval_loader, args.epochs, args.output, args.lr)
