@@ -127,7 +127,7 @@ def compute_accuracy_with_logits(logits, labels):
 
 def train_foil(model, train_loader, eval_loader, num_epochs, output):
     utils.create_dir(output)
-    lr = 0.0001
+    lr = 0.001
     optim = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
     logger = utils.Logger(os.path.join(output, 'log.txt'))
     best_eval_accuracy = 0
