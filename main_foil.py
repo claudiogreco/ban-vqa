@@ -28,8 +28,9 @@ def parse_args():
     parser.add_argument('--gamma', type=int, default=8, help='glimpse')
     parser.add_argument('--input', type=str, default='saved_models/ban/model_epoch12.pth')
     parser.add_argument('--output', type=str, default='foil_saved_models/ban')
-    parser.add_argument('--train_last_only', type=bool, default=True)
+    parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=512)
+    parser.add_argument('--train_last_only', type='train_last_only', action='store_false')
     parser.add_argument('--seed', type=int, default=1204, help='random seed')
     args = parser.parse_args()
     return args
@@ -139,4 +140,4 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_dset, args.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
     eval_loader = DataLoader(val_dset, args.batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
 
-    train_foil(model, train_loader, eval_loader, args.epochs, args.output)
+    train_foil(model, train_loader, eval_loader, args.epochs, args.output, lr)
