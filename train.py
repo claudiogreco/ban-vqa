@@ -168,7 +168,7 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output):
         logger.write('epoch %d, time: %.2f' % (epoch, time.time() - t))
         logger.write('\ttrain_loss: %.2f, score: %.2f' % (total_loss, train_score))
         if eval_loader is not None:
-            logger.write('\teval score: %.2f' % 100 * eval_score)
+            logger.write('\teval score: %.2f' % (100 * eval_score))
         if eval_loader is not None and eval_score > best_eval_accuracy:
             model_path = os.path.join(output, 'model_epoch%d.pth' % epoch)
             utils.save_model(model_path, model, epoch, optim)
@@ -207,7 +207,6 @@ def evaluate(model, dataloader):
 def evaluate_foil(model, dataloader):
     score = 0
     num_data = 0
-
     for v, b, q, a in iter(dataloader):
         v = Variable(v).cuda()
         b = Variable(b).cuda()
@@ -216,7 +215,6 @@ def evaluate_foil(model, dataloader):
         batch_score = compute_accuracy_with_logits(pred, a.cuda())
         score += batch_score
         num_data += pred.size(0)
-
     score = score / len(dataloader.dataset)
     return score
 
