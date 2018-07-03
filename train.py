@@ -173,7 +173,8 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output, lr):
             utils.save_model(model_path, model, epoch, optim)
             if eval_loader is not None:
                 best_eval_accuracy = eval_score
-
+        del eval_score
+        del train_score
 
 def evaluate(model, dataloader):
     score = 0
