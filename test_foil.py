@@ -17,6 +17,7 @@ from torch.utils.data import DataLoader
 import base_model
 import utils
 from classifier import SimpleClassifier
+from classifier_foil import SimpleClassifierFoil
 from dataset import Dictionary, FoilFeatureDataset
 
 
@@ -165,7 +166,7 @@ if __name__ == '__main__':
         model.load_state_dict(model_data.get('model_state', model_data))
         model.train(False)
 
-        model.module.classifier = SimpleClassifier(args.num_hid, args.num_hid * 2, eval_dset.num_ans_candidates, .5)
+        model.module.classifier = SimpleClassifierFoil(args.num_hid, args.num_hid * 2, eval_dset.num_ans_candidates)
         model.module.classifier = model.module.classifier.cuda()
 
         # logits, qIds = get_logits(model, eval_loader)
