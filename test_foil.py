@@ -186,4 +186,4 @@ if __name__ == '__main__':
             #     % (args.split, model_label), 'w') as f:
             #     json.dump(results, f)
 
-            # process(args, model, eval_loader)
+    process(args, model, eval_loader)
