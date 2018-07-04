@@ -19,6 +19,7 @@ import utils
 from classifier import SimpleClassifier
 from classifier_foil import SimpleClassifierFoil
 from dataset import Dictionary, FoilFeatureDataset
+from train import evaluate_foil
 
 
 def parse_args():
@@ -28,14 +29,12 @@ def parse_args():
     parser.add_argument('--op', type=str, default='c')
     parser.add_argument('--label', type=str, default='')
     parser.add_argument('--gamma', type=int, default=8)
-    parser.add_argument('--split', type=str, default='test2015')
-    parser.add_argument('--input', type=str, default='saved_models/ban')
+    parser.add_argument('--model_path', type=str, required=True)
     parser.add_argument('--output', type=str, default='results')
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--debug', type=bool, default=False)
     parser.add_argument('--logits', type=bool, default=True)
     parser.add_argument('--index', type=int, default=0)
-    parser.add_argument('--epoch', type=int, default=12)
     args = parser.parse_args()
     return args
 
@@ -158,28 +157,26 @@ if __name__ == '__main__':
 
 
     def process(args, model, eval_loader):
-        model_path = args.input + '/model%s.pth' % ('' if 0 > args.epoch else '_epoch%d' % args.epoch)
-
-        print('loading %s' % model_path)
-        model_data = torch.load(model_path)
+        print('loading %s' % args.model_path)
+        model_data = torch.load(args.model_path)
         model = nn.DataParallel(model).cuda()
         model.load_state_dict(model_data.get('model_state', model_data))
         model.train(False)
 
-        model.module.classifier = SimpleClassifierFoil(args.num_hid, args.num_hid * 2, eval_dset.num_ans_candidates)
-        model.module.classifier = model.module.classifier.cuda()
+        test_accuracy = evaluate_foil(model, eval_loader)
+        print("Test accuracy: {}".format(test_accuracy))
 
-        # logits, qIds = get_logits(model, eval_loader)
-        logits = get_logits(model, eval_loader)
-        print(logits)
+        # # logits, qIds = get_logits(model, eval_loader)
+        # logits = get_logits(model, eval_loader)
+        # print(logits)
+        #
+        # # results = make_json(logits, qIds, eval_loader)
+        # model_label = '%s%s%d_%s' % (args.model, args.op, args.num_hid, args.label)
+        # print("step 5")
 
-        # results = make_json(logits, qIds, eval_loader)
-        model_label = '%s%s%d_%s' % (args.model, args.op, args.num_hid, args.label)
-        print("step 5")
-
-        if args.logits:
-            utils.create_dir('logits/' + model_label)
-            torch.save(logits, 'logits/' + model_label + '/logits%d.pth' % args.index)
+        # if args.logits:
+        #     utils.create_dir('logits/' + model_label)
+        #     torch.save(logits, 'logits/' + model_label + '/logits%d.pth' % args.index)
 
             # utils.create_dir(args.output)
             # if 0 <= args.epoch:
