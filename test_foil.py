@@ -152,7 +152,7 @@ if __name__ == '__main__':
     batch_size = args.batch_size * n_device
 
     constructor = 'build_foil_ban'
-    model = getattr(base_model, constructor)(eval_dset, args.num_hid, 2, args.op, args.gamma).cuda()
+    model = getattr(base_model, constructor)(eval_dset, 64, 2, args.op, args.gamma).cuda()
     eval_loader = DataLoader(eval_dset, batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
 
 
