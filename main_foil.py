@@ -122,7 +122,6 @@ if __name__ == '__main__':
 
     constructor = 'build_%s' % args.model
     model = getattr(base_model, constructor)(train_dset, args.num_hid, 3129, args.op, args.gamma).cuda()
-
     model = nn.DataParallel(model).cuda()
 
     if args.input is not None:

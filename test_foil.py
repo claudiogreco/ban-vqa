@@ -151,8 +151,13 @@ if __name__ == '__main__':
     n_device = torch.cuda.device_count()
     batch_size = args.batch_size * n_device
 
-    constructor = 'build_foil_ban'
-    model = getattr(base_model, constructor)(eval_dset, 64, 2, args.op, args.gamma).cuda()
+    constructor = 'build_%s' % args.model
+    model = getattr(base_model, constructor)(eval_dset, args.num_hid, 3129, args.op, args.gamma).cuda()
+    model = nn.DataParallel(model).cuda()
+
+    model.module.classifier = SimpleClassifierFoil(args.num_hid, 64, eval_dset.num_ans_candidates)
+    model.module.classifier = model.module.classifier.cuda()
+
     eval_loader = DataLoader(eval_dset, batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
 
 
