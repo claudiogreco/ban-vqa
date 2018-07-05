@@ -124,6 +124,8 @@ if __name__ == '__main__':
     constructor = 'build_%s' % args.model
     model = getattr(base_model, constructor)(train_dset, args.num_hid, 3129, args.op, args.gamma).cuda()
 
+    model.w_emb.init_embedding('data/glove6b_init_300d.npy')
+
     if args.input is not None:
         print('loading %s' % args.input)
         model_data = torch.load(args.input)
