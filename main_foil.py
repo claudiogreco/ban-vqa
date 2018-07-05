@@ -121,7 +121,7 @@ if __name__ == '__main__':
         adaptive=True
     )
 
-    constructor = 'build_%s' % args.model
+    constructor = 'build_ban_foil'
     model = getattr(base_model, constructor)(train_dset, args.num_hid, 3129, args.op, args.gamma).cuda()
 
     model.w_emb.init_embedding('data/glove6b_init_300d.npy')
@@ -132,11 +132,12 @@ if __name__ == '__main__':
         model.load_state_dict(model_data.get('model_state', model_data))
 
     if args.train_last_only:
+        print("train_last_only!")
         for param in model.parameters():
             param.requires_grad = False
 
-    model.classifier = SimpleClassifierFoil(args.num_hid, 64, train_dset.num_ans_candidates)
-    model = nn.DataParallel(model).cuda()
+    # model.classifier = SimpleClassifierFoil(args.num_hid, 64, train_dset.num_ans_candidates)
+    # model = nn.DataParallel(model).cuda()
 
     train_loader = DataLoader(train_dset, args.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
     eval_loader = DataLoader(val_dset, args.batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)

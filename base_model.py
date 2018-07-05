@@ -82,3 +82,20 @@ def build_ban(dataset, num_hid, num_ans_candidates, op='', gamma=4):
     classifier = SimpleClassifier(num_hid, num_hid * 2, num_ans_candidates, .5)
     counter = Counter(objects)
     return BanModel(dataset, w_emb, q_emb, v_att, b_net, q_prj, c_prj, classifier, counter, op, gamma)
+
+
+def build_ban_foil(dataset, num_hid, num_ans_candidates, op='', gamma=4):
+    w_emb = WordEmbedding(dataset.dictionary.ntoken, 300, .0, op)
+    q_emb = QuestionEmbedding(300 if 'c' not in op else 600, num_hid, 1, False, .0)
+    v_att = BiAttention(dataset.v_dim, num_hid, num_hid, gamma)
+    b_net = []
+    q_prj = []
+    c_prj = []
+    objects = 10 # minimum number of boxes
+    for i in range(gamma):
+        b_net.append(BCNet(dataset.v_dim, num_hid, num_hid, None, k=1))
+        q_prj.append(FCNet([num_hid, num_hid], '', .2))
+        c_prj.append(FCNet([objects + 1, num_hid], 'ReLU', .0))
+    classifier = SimpleClassifierFoil(num_hid, 64, num_ans_candidates)
+    counter = Counter(objects)
+    return BanModel(dataset, w_emb, q_emb, v_att, b_net, q_prj, c_prj, classifier, counter, op, gamma)

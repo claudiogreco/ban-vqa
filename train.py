@@ -127,12 +127,11 @@ def compute_accuracy_with_logits(logits, labels):
 
 def train_foil(model, train_loader, eval_loader, num_epochs, output, lr):
     utils.create_dir(output)
-    optim = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
+    optim = torch.optim.Adamax(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
     logger = utils.Logger(os.path.join(output, 'log.txt'))
     best_eval_accuracy = 0
     utils.print_model(model, logger)
     logger.write('optim: adam lr=%.4f' % lr)
-
     for epoch in range(num_epochs):
         print("Epoch {}".format(epoch))
         total_loss = 0
@@ -142,6 +141,7 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output, lr):
         bar = progressbar.ProgressBar(max_value=N)
         idx = 0
         for i, (v, b, q, a) in enumerate(train_loader):
+            model.train(True)
             bar.update(idx)
             batch_size = v.size(0)
             v = Variable(v).cuda()
@@ -151,6 +151,7 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output, lr):
             idx += batch_size
             pred, att = model(v, b, q, a)
             loss = instance_bce_with_logits(pred, a)
+            print(loss)
             loss.backward()
             optim.step()
             optim.zero_grad()
@@ -173,8 +174,7 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output, lr):
             utils.save_model(model_path, model, epoch, optim)
             if eval_loader is not None:
                 best_eval_accuracy = eval_score
-        del eval_score
-        del train_score
+
 
 def evaluate(model, dataloader):
     score = 0
