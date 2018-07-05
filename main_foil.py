@@ -122,12 +122,13 @@ if __name__ == '__main__':
     )
 
     model = build_ban(train_dset, args.num_hid, 2, args.op, args.gamma).cuda()
-    model.w_emb.init_embedding('data/glove6b_init_300d.npy')
 
     if args.input is not None:
         print('loading %s' % args.input)
         model_data = torch.load(args.input)
         model.load_state_dict(model_data.get('model_state', model_data))
+    else:
+        model.w_emb.init_embedding('data/glove6b_init_300d.npy')
 
     if args.train_last_only:
         for param in model.parameters():
