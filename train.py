@@ -151,7 +151,6 @@ def train_foil(model, train_loader, eval_loader, num_epochs, output, lr):
             idx += batch_size
             pred, att = model(v, b, q, a)
             loss = instance_bce_with_logits(pred, a)
-            print(loss)
             loss.backward()
             optim.step()
             optim.zero_grad()
