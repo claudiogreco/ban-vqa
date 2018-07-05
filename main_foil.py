@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument('--input', type=str, default=None)
     parser.add_argument('--output', type=str, default='foil_saved_models/ban')
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--batch_size', type=int, default=512)
+    parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--train_last_only', dest='train_last_only', action='store_true')
     parser.add_argument('--seed', type=int, default=1204, help='random seed')
     args = parser.parse_args()
@@ -121,21 +121,21 @@ if __name__ == '__main__':
         adaptive=True
     )
 
-    model = build_ban(train_dset, args.num_hid, 2, args.op, args.gamma).cuda()
+    model = build_ban(train_dset, args.num_hid, 3129, args.op, args.gamma).cuda()
+    model.w_emb.init_embedding('data/glove6b_init_300d.npy')
+    model = nn.DataParallel(model).cuda()
 
     if args.input is not None:
         print('loading %s' % args.input)
         model_data = torch.load(args.input)
         model.load_state_dict(model_data.get('model_state', model_data))
-    else:
-        model.w_emb.init_embedding('data/glove6b_init_300d.npy')
 
     if args.train_last_only:
         for param in model.parameters():
             param.requires_grad = False
 
-    model.classifier = SimpleClassifierFoil(args.num_hid, 64, train_dset.num_ans_candidates)
-    model = nn.DataParallel(model).cuda()
+    model.module.classifier = SimpleClassifierFoil(args.num_hid, 64, train_dset.num_ans_candidates)
+    model.module.classifier = model.module.classifier.cuda()
 
     train_loader = DataLoader(train_dset, args.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
     eval_loader = DataLoader(val_dset, args.batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
