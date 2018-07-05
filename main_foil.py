@@ -26,7 +26,8 @@ def parse_args():
     parser.add_argument('--model', type=str, default='ban')
     parser.add_argument('--op', type=str, default='c')
     parser.add_argument('--gamma', type=int, default=8, help='glimpse')
-    parser.add_argument('--input', type=str, default='saved_models/ban/model_epoch12.pth')
+    # parser.add_argument('--input', type=str, default='saved_models/ban/model_epoch12.pth')
+    parser.add_argument('--input', type=str, default=None)
     parser.add_argument('--output', type=str, default='foil_saved_models/ban')
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=512)
@@ -122,7 +123,6 @@ if __name__ == '__main__':
 
     constructor = 'build_%s' % args.model
     model = getattr(base_model, constructor)(train_dset, args.num_hid, 3129, args.op, args.gamma).cuda()
-    model = nn.DataParallel(model).cuda()
 
     if args.input is not None:
         print('loading %s' % args.input)
@@ -134,7 +134,7 @@ if __name__ == '__main__':
             param.requires_grad = False
 
     model.module.classifier = SimpleClassifierFoil(args.num_hid, 64, train_dset.num_ans_candidates)
-    model.module.classifier = model.module.classifier.cuda()
+    model = nn.DataParallel(model).cuda()
 
     train_loader = DataLoader(train_dset, args.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
     eval_loader = DataLoader(val_dset, args.batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
