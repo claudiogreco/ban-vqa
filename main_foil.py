@@ -137,7 +137,7 @@ if __name__ == '__main__':
             param.requires_grad = False
 
     # model.classifier = SimpleClassifierFoil(args.num_hid, 64, train_dset.num_ans_candidates)
-    # model = nn.DataParallel(model).cuda()
+    model = nn.DataParallel(model).cuda()
 
     train_loader = DataLoader(train_dset, args.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
     eval_loader = DataLoader(val_dset, args.batch_size, shuffle=False, num_workers=1, collate_fn=utils.trim_collate)
