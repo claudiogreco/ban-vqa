@@ -122,7 +122,7 @@ if __name__ == '__main__':
     )
 
     constructor = 'build_ban_foil'
-    model = getattr(base_model, constructor)(train_dset, args.num_hid, 3129, args.op, args.gamma).cuda()
+    model = getattr(base_model, constructor)(train_dset, args.num_hid, 2, args.op, args.gamma).cuda()
 
     model.w_emb.init_embedding('data/glove6b_init_300d.npy')
 
