@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-import base_model
+from base_model import build_ban
 import utils
 from classifier_foil import SimpleClassifierFoil
 from dataset import Dictionary, FoilFeatureDataset
@@ -121,9 +121,7 @@ if __name__ == '__main__':
         adaptive=True
     )
 
-    constructor = 'build_ban_foil'
-    model = getattr(base_model, constructor)(train_dset, args.num_hid, 2, args.op, args.gamma).cuda()
-
+    model = build_ban(train_dset, args.num_hid, 2, args.op, args.gamma).cuda()
     model.w_emb.init_embedding('data/glove6b_init_300d.npy')
 
     if args.input is not None:
@@ -132,11 +130,10 @@ if __name__ == '__main__':
         model.load_state_dict(model_data.get('model_state', model_data))
 
     if args.train_last_only:
-        print("train_last_only!")
         for param in model.parameters():
             param.requires_grad = False
 
-    # model.classifier = SimpleClassifierFoil(args.num_hid, 64, train_dset.num_ans_candidates)
+    model.classifier = SimpleClassifierFoil(args.num_hid, 64, train_dset.num_ans_candidates)
     model = nn.DataParallel(model).cuda()
 
     train_loader = DataLoader(train_dset, args.batch_size, shuffle=True, num_workers=1, collate_fn=utils.trim_collate)
